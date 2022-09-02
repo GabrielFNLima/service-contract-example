@@ -2,13 +2,15 @@
 
 namespace GFNL\ModelExample\Api;
 
+use Magento\TestFramework\Event\Magento;
+
 interface ExampleRepositoryInterface
 {
     /**
      * @param \GFNL\ModelExample\Api\Data\ExampleInterface $custom
      * @return int
      */
-    public function save(\GFNL\ModelExampl\Api\Data\Examplenterface $custom);
+    public function save(\GFNL\ModelExample\Api\Data\ExampleInterface $custom);
 
     /**
      * @param $customId

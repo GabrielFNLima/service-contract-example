@@ -4,34 +4,39 @@ namespace GFNL\ModelExample\Model;
 
 use Magento\Framework\Api\SortOrder;
 use Magento\Framework\Exception\NoSuchEntityException;
-use GFNL\ModelExample\Api\Data\ExampleSearchResultsInterfaceFactory;
+
+use GFNL\ModelExample\Api\Data\ExampleSearchResultsInterface;
 use GFNL\ModelExample\Model\ExampleFactory;
 use GFNL\ModelExample\Api\ExampleRepositoryInterface;
 use GFNL\ModelExample\Model\ResourceModel\Example as ExampleResource;
 use GFNL\ModelExample\Model\ResourceModel\Example\CollectionFactory;
+use GFNL\ModelExample\Model\ResourceModel\Example\Collection;
+use \Magento\Framework\Api\SearchCriteriaInterface;
+use Magento\Framework\Api\SearchCriteria\CollectionProcessorInterface;
+
+//use GFNL\ModelExample\Api\Data\ExampleSearchResultsInterface;
 
 class ExampleRepository implements ExampleRepositoryInterface
 {
     public function __construct(
-        ExampleResource $customResource,
-        ExampleFactory $customFactory,
-        CollectionFactory $collectionFactory,
-        ExampleSearchResultsInterfaceFactory $searchResultsFactory
+        ExampleResource                                           $customResource,
+        ExampleFactory                                            $customFactory,
+        CollectionFactory                                         $collectionFactory,
+        CollectionProcessorInterface                              $collectionProcessor,
+        \GFNL\ModelExample\Api\Data\ExampleSearchResultsInterfaceFactory $searchResultsFactory
     )
     {
         $this->customResource = $customResource;
         $this->customFactory = $customFactory;
         $this->collectionFactory = $collectionFactory;
-        $this->$searchResultsFactory = $searchResultsFactory;
+        $this->collectionProcessor = $collectionProcessor;
+
+        $this->searchResultFactory = $searchResultsFactory;
     }
 
-    /**
-     * @inheritDoc
-     */
-    public function save(\GFNL\ModelExample\Api\Data\ExampleInterface  $custom)
+    public function save(\GFNL\ModelExample\Api\Data\ExampleInterface $custom)
     {
-        $this->customResource->save($custom);
-        return $custom->getId();
+        return $this->customResource->save($custom);
     }
 
     /**
@@ -41,45 +46,50 @@ class ExampleRepository implements ExampleRepositoryInterface
     {
         $custom = $this->customFactory->create();
         $this->customResource->load($custom, $customId);
-        if(!$custom->getId()) {
-            throw new NoSuchEntityException('Custom does not exist');
+        if (!$custom->getId()) {
+            throw new NoSuchEntityException(__('Unable to find ID "%1"', $customId));
         }
         return $custom;
     }
 
-    /**
-     * @inheritDoc
-     */
-    public function getList(\Magento\Framework\Api\SearchCriteriaInterface $searchCriteria)
+    public function getList(\Magento\Framework\Api\SearchCriteriaInterface $criteria)
     {
+        $searchResults = $this->searchResultFactory->create();
+        $searchResults->setSearchCriteria($criteria);
         $collection = $this->collectionFactory->create();
-        foreach ($searchCriteria->getFilterGroups() as $group) {
-            $this->addFilterGroupToCollection($group, $collection);
+        foreach ($criteria->getFilterGroups() as $filterGroup) {
+            $fields = [];
+            $conditions = [];
+            foreach ($filterGroup->getFilters() as $filter) {
+                $condition = $filter->getConditionType() ? $filter->getConditionType() : 'eq';
+                $fields[] = $filter->getField();
+                $conditions[] = [$condition => $filter->getValue()];
+            }
+            if ($fields) {
+                $collection->addFieldToFilter($fields, $conditions);
+            }
         }
-        /** @var \Magento\Framework\Api\SortOrder $sortOrder */
-        foreach ((array)$searchCriteria->getSortOrders() as $sortOrder) {
-            $field = $sortOrder->getField();
-            $collection->addOrder(
-                $field,
-                $this->getDirection($sortOrder->getDirection())
-            );
-
-        }
-
-        $collection->setCurPage($searchCriteria->getCurrentPage());
-        $collection->setPageSize($searchCriteria->getPageSize());
-        $collection->load();
-        $searchResults = $this->searchResultsFactory->create();
-        $searchResults->setCriteria($searchCriteria);
-
-        $customs=[];
-        foreach ($collection as $Custom){
-            $Customs[] = $Custom;
-        }
-        $searchResults->setItems($customs);
         $searchResults->setTotalCount($collection->getSize());
+        $sortOrders = $criteria->getSortOrders();
+        if ($sortOrders) {
+            /** @var SortOrder $sortOrder */
+            foreach ($sortOrders as $sortOrder) {
+                $collection->addOrder(
+                    $sortOrder->getField(),
+                    ($sortOrder->getDirection() == SortOrder::SORT_ASC) ? 'ASC' : 'DESC'
+                );
+            }
+        }
+        $collection->setCurPage($criteria->getCurrentPage());
+        $collection->setPageSize($criteria->getPageSize());
+        $objects = [];
+        foreach ($collection as $objectModel) {
+            $objects[] = $objectModel;
+        }
+        $searchResults->setItems($objects);
         return $searchResults;
     }
+
 
     /**
      * @inheritDoc
@@ -88,7 +98,7 @@ class ExampleRepository implements ExampleRepositoryInterface
     {
         $custom = $this->customFactory->create();
         $custom->setId($customId);
-        if( $this->ExampleResource->delete($custom)){
+        if ($this->customResource->delete($custom)) {
             return true;
         } else {
             return false;
@@ -104,6 +114,7 @@ class ExampleRepository implements ExampleRepositoryInterface
     {
         return $direction == SortOrder::SORT_ASC ?: SortOrder::SORT_DESC;
     }
+
     /**
      * @param \Magento\Framework\Api\Search\FilterGroup $group
      *
@@ -113,12 +124,12 @@ class ExampleRepository implements ExampleRepositoryInterface
         $fields = [];
         $conditions = [];
 
-        foreach($group->getFilters() as $filter){
+        foreach ($group->getFilters() as $filter) {
             $condition = $filter->getConditionType() ?: 'eq';
             $field = $filter->getField();
             $value = $filter->getValue();
             $fields[] = $field;
-            $conditions[] = [$condition=>$value];
+            $conditions[] = [$condition => $value];
 
         }
         $collection->addFieldToFilter($fields, $conditions);

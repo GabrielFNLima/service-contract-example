@@ -5,7 +5,7 @@ namespace GFNL\ModelExample\Api\Data;
 use Magento\Framework\Api\SearchResultsInterface;
 
 
-interface ExampleSearchResultsInterface extends SearchResultsInterface
+interface ExampleSearchResultsInterface extends \Magento\Framework\Api\SearchResultsInterface
 {
     /**
      * @return \GFNL\ModelExample\Api\Data\ExampleInterface[]
