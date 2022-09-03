@@ -19,10 +19,10 @@ use Magento\Framework\Api\SearchCriteria\CollectionProcessorInterface;
 class ExampleRepository implements ExampleRepositoryInterface
 {
     public function __construct(
-        ExampleResource                                           $customResource,
-        ExampleFactory                                            $customFactory,
-        CollectionFactory                                         $collectionFactory,
-        CollectionProcessorInterface                              $collectionProcessor,
+        ExampleResource                                                  $customResource,
+        ExampleFactory                                                   $customFactory,
+        CollectionFactory                                                $collectionFactory,
+        CollectionProcessorInterface                                     $collectionProcessor,
         \GFNL\ModelExample\Api\Data\ExampleSearchResultsInterfaceFactory $searchResultsFactory
     )
     {
@@ -36,7 +36,14 @@ class ExampleRepository implements ExampleRepositoryInterface
 
     public function save(\GFNL\ModelExample\Api\Data\ExampleInterface $custom)
     {
-        return $this->customResource->save($custom);
+            $custom->setCustomName($custom->getCustomName());
+        try {
+            $this->customResource->save($custom);
+        } catch (\Exception $e) {
+            throw new \Magento\Framework\Exception\CouldNotSaveException(__($e->getMessage()));
+        }
+        return $custom;
+//        return $this->customResource->save($custom);
     }
 
     /**
@@ -47,7 +54,7 @@ class ExampleRepository implements ExampleRepositoryInterface
         $custom = $this->customFactory->create();
         $this->customResource->load($custom, $customId);
         if (!$custom->getId()) {
-            throw new NoSuchEntityException(__('Unable to find ID "%1"', $customId));
+            throw new \Magento\Framework\Exception\NoSuchEntityException(__('Unable to find ID "%1"', $customId));
         }
         return $custom;
     }
@@ -94,44 +101,18 @@ class ExampleRepository implements ExampleRepositoryInterface
     /**
      * @inheritDoc
      */
-    public function delete($customId)
+    public function delete(\GFNL\ModelExample\Api\Data\ExampleInterface $custom)
     {
-        $custom = $this->customFactory->create();
-        $custom->setId($customId);
-        if ($this->customResource->delete($custom)) {
-            return true;
-        } else {
-            return false;
+        try {
+            $this->customResource->delete($custom);
+        } catch (\Exception $exception) {
+            throw new \Magento\Framework\Exception\CouldNotDeleteException(__($exception->getMessage()));
         }
+        return true;
     }
-
-    /**
-     * @param int $customId
-     * @return string
-     */
-
-    private function getDirection($direction)
+    public function deleteById($id)
     {
-        return $direction == SortOrder::SORT_ASC ?: SortOrder::SORT_DESC;
+        return $this->delete($this->getById($id));
     }
 
-    /**
-     * @param \Magento\Framework\Api\Search\FilterGroup $group
-     *
-     */
-    private function addFilterGroupToCollection($group, $collection)
-    {
-        $fields = [];
-        $conditions = [];
-
-        foreach ($group->getFilters() as $filter) {
-            $condition = $filter->getConditionType() ?: 'eq';
-            $field = $filter->getField();
-            $value = $filter->getValue();
-            $fields[] = $field;
-            $conditions[] = [$condition => $value];
-
-        }
-        $collection->addFieldToFilter($fields, $conditions);
-    }
 }

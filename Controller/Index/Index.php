@@ -43,14 +43,11 @@ class Index extends Action
      */
     public function execute()
     {
-//        die('here');
-        $data = [
-            'custom_name' => 'lima3'
-        ];
-        $obj = $this->exampleFactory->create();
-        $obj->addData($data);
-        $this->exampleRepository->save($obj);
-        die('oi');
-        return $this->resultPageFactory->create();
+        $obj = $this->exampleFactory->create()->addData([
+            'custom_name' => 'lima ' . rand()
+        ]);
+        var_dump($this->exampleRepository->save($obj)->getCustomName());
+
+        $this->resultFactory->create("raw");
     }
 }

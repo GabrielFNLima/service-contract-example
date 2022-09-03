@@ -38,12 +38,13 @@ class Getlist extends \Magento\Framework\App\Action\Action
      * @param \Magento\Framework\Api\SearchCriteriaBuilder $searchCriteriaBuilder
      */
     public function __construct(
-        \Magento\Framework\App\Action\Context $context,
-        \Magento\Framework\View\Result\PageFactory $resultPageFactory,
-        \GFNL\ModelExample\Model\ExampleRepository $modelRepository,
+        \Magento\Framework\App\Action\Context        $context,
+        \Magento\Framework\View\Result\PageFactory   $resultPageFactory,
+        \GFNL\ModelExample\Model\ExampleRepository   $modelRepository,
         \Magento\Framework\Api\SearchCriteriaBuilder $searchCriteriaBuilder,
-        CollectionFactory $collectionFactory
-    ) {
+        CollectionFactory                            $collectionFactory
+    )
+    {
         $this->resultPageFactory = $resultPageFactory;
         $this->modelRepository = $modelRepository;
         $this->searchCriteriaBuilder = $searchCriteriaBuilder;
@@ -56,23 +57,14 @@ class Getlist extends \Magento\Framework\App\Action\Action
      */
     public function execute()
     {
-        $_filter = $this->searchCriteriaBuilder->addFilter("custom_name","lima")->create();
+        $_filter = $this->searchCriteriaBuilder->create();
         $list = $this->modelRepository->getList($_filter);
         $results = $list->getItems();
 
-//        $list = $this->modelRepository->getById(3);
-//        $results = $list->getData();
-
-//        $this->modelRepository->delete(3);
-
-//        $list = $this->collectionFactory->create()->addFieldToSelect('*');
-//        $results = $list->load()->getData();
-        var_dump($results);
-//        foreach ($results as $result) {
-//            echo $result['custom_name']. "<br/>";
-//        }
-        die('list3');
-
+        foreach ($results as $result) {
+            echo $result->getCustomName(). " - ". $result->getId() ."<br/>";
+        }
+        $this->resultFactory->create("raw");
 
 
     }

@@ -29,5 +29,7 @@ interface ExampleRepositoryInterface
      * @param int $customId
      * @return bool
      */
-    public function delete($customId);
+    public function delete(\GFNL\ModelExample\Api\Data\ExampleInterface $custom);
+
+    public function deleteById($id);
 }
