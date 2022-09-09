@@ -5,6 +5,7 @@ namespace GFNL\ModelExample\Model;
 use Magento\Framework\Model\AbstractModel;
 use GFNL\ModelExample\Api\Data\ExampleInterface;
 use GFNL\ModelExample\Model\ResourceModel\Example as ResourceModelExample;
+
 class Example extends AbstractModel implements ExampleInterface
 {
     protected function _construct()

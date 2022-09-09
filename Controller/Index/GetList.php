@@ -6,6 +6,7 @@ namespace GFNL\ModelExample\Controller\Index;
 use GFNL\ModelExample\Model\ResourceModel\Example\CollectionFactory;
 use \Magento\Framework\Controller\Result\RawFactory;
 use GFNL\ModelExample\Model\ExampleRepository;
+use Magento\Framework\Api\SortOrder;
 
 class Getlist extends \Magento\Framework\App\Action\Action
 {
@@ -42,13 +43,15 @@ class Getlist extends \Magento\Framework\App\Action\Action
         \Magento\Framework\View\Result\PageFactory   $resultPageFactory,
         \GFNL\ModelExample\Model\ExampleRepository   $modelRepository,
         \Magento\Framework\Api\SearchCriteriaBuilder $searchCriteriaBuilder,
-        CollectionFactory                            $collectionFactory
+        CollectionFactory                            $collectionFactory,
+        \Magento\Framework\Api\SortOrderFactory $sortOrderFactory
     )
     {
         $this->resultPageFactory = $resultPageFactory;
         $this->modelRepository = $modelRepository;
         $this->searchCriteriaBuilder = $searchCriteriaBuilder;
         $this->collectionFactory = $collectionFactory;
+        $this->sortOrderFactory = $sortOrderFactory;
         return parent::__construct($context);
     }
 
@@ -57,7 +60,10 @@ class Getlist extends \Magento\Framework\App\Action\Action
      */
     public function execute()
     {
-        $_filter = $this->searchCriteriaBuilder->create();
+        $sortOrder = $this->sortOrderFactory->create()
+            ->setField('id')
+            ->setDirection(SortOrder::SORT_DESC);
+        $_filter = $this->searchCriteriaBuilder->setSortOrders([$sortOrder])->create();
         $list = $this->modelRepository->getList($_filter);
         $results = $list->getItems();
 
